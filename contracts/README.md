@@ -1,57 +1,85 @@
-# Sample Hardhat 3 Project (`mocha` and `ethers`)
+# VerifyAI Smart Contracts
 
-This project showcases a Hardhat 3 project using `mocha` for tests and the `ethers` library for Ethereum interactions.
+VerifyAI is an on-chain provenance registry for AI-generated and human-created content. Only SHA-256 hashes and declared metadata are stored on-chain.
 
-To learn more about Hardhat 3, please visit the [Getting Started guide](https://hardhat.org/docs/getting-started#getting-started-with-hardhat-3). To share your feedback, join our [Hardhat 3](https://hardhat.org/hardhat3-telegram-group) Telegram group or [open an issue](https://github.com/NomicFoundation/hardhat/issues/new) in our GitHub issue tracker.
+## Project Structure
 
-## Project Overview
+All contract commands should be executed from this folder (`contracts/`):
 
-This example project includes:
+- `contracts/VerifyAIRegistry.sol`: Core registry contract (inherits OpenZeppelin 5.x `Ownable2Step`).
+- `test/VerifyAIRegistry.ts`: Comprehensive test suite (70 tests covering all features and edge cases).
+- `ignition/modules/VerifyAIRegistry.ts`: Hardhat Ignition deployment module.
+- `scripts/export-deployment.ts`: Exports deployment records and ABI from Ignition artifacts.
+- `scripts/smoke-test.ts`: Read-only verification of deployed contract state.
+- `deployment/`: Contains exported deployment records and contract ABI.
 
-- A simple Hardhat configuration file.
-- Foundry-compatible Solidity unit tests.
-- TypeScript integration tests using `mocha` and ethers.js
-- Examples demonstrating how to connect to different types of networks, including locally simulating OP mainnet.
+## Running Tests
 
-## Usage
-
-### Running Tests
-
-To run all the tests in the project, execute the following command:
+Run all unit and integration tests:
 
 ```shell
 npx hardhat test
 ```
 
-You can also selectively run the Solidity or `mocha` tests:
+## Deploying to Sepolia
+
+Follow these steps in order to deploy `VerifyAIRegistry` to Ethereum Sepolia (chain ID `11155111`).
+
+### 1. Set Configuration Variables (Encrypted Keystore)
+
+Store your RPC URL, private key, and Etherscan API key securely in Hardhat 3's encrypted keystore. You will be prompted to enter each value and set/enter your keystore password:
 
 ```shell
-npx hardhat test solidity
-npx hardhat test mocha
-```
-
-### Make a deployment to Sepolia
-
-This project includes an example Ignition module to deploy the contract. You can deploy this module to a locally simulated chain or to Sepolia.
-
-To run the deployment to a local chain:
-
-```shell
-npx hardhat ignition deploy ignition/modules/Counter.ts
-```
-
-To run the deployment to Sepolia, you need an account with funds to send the transaction. The provided Hardhat configuration includes a Configuration Variable called `SEPOLIA_PRIVATE_KEY`, which you can use to set the private key of the account you want to use.
-
-You can set the `SEPOLIA_PRIVATE_KEY` variable using the `hardhat-keystore` plugin or by setting it as an environment variable.
-
-To set the `SEPOLIA_PRIVATE_KEY` config variable using `hardhat-keystore`:
-
-```shell
+npx hardhat keystore set SEPOLIA_RPC_URL
 npx hardhat keystore set SEPOLIA_PRIVATE_KEY
+npx hardhat keystore set ETHERSCAN_API_KEY
 ```
 
-After setting the variable, you can run the deployment with the Sepolia network:
+> **Security Note:** Never commit secrets, write them to `.env`, or hardcode them into config files. Hardhat 3 resolves these securely from the keystore at runtime.
+
+### 2. Deploy using Hardhat Ignition
+
+Deploy `VerifyAIRegistry` to Sepolia. The Ignition module passes `m.getAccount(0)` (derived from `SEPOLIA_PRIVATE_KEY`) as the `initialOwner`:
 
 ```shell
-npx hardhat ignition deploy --network sepolia ignition/modules/Counter.ts
+npx hardhat ignition deploy ignition/modules/VerifyAIRegistry.ts --network sepolia
 ```
+
+This will write deployment records to `ignition/deployments/chain-11155111/`.
+
+### 3. Export Deployment Record and ABI
+
+Extract the deployed contract address, transaction hash, block number, timestamp, and ABI:
+
+```shell
+npx hardhat run scripts/export-deployment.ts --network sepolia
+```
+
+This writes:
+- `deployment/sepolia.json` (deployment record metadata)
+- `deployment/VerifyAIRegistry.abi.json` (contract ABI for frontend use)
+
+### 4. Verify on Etherscan
+
+Verify the source code on Etherscan using the contract address and the deployer wallet address (the constructor argument for `initialOwner`):
+
+```shell
+npx hardhat verify --network sepolia <CONTRACT_ADDRESS> <DEPLOYER_ADDRESS>
+```
+
+*(Alternatively, you can run `npx hardhat ignition verify chain-11155111`)*.
+
+### 5. Run Smoke Test
+
+Run the read-only smoke-test script to verify that the contract is accessible on Sepolia and initialized correctly (sends 0 transactions):
+
+```shell
+npx hardhat run scripts/smoke-test.ts --network sepolia
+```
+
+The script will query and print:
+- `owner()`
+- `pendingOwner()`
+- `getModelNames()`
+- `getStats()`
+- `reportCount()`

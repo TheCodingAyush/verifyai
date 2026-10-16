@@ -1,0 +1,11 @@
+{
+  "chainId": 31337,
+  "network": "localhost",
+  "contractName": "VerifyAIRegistry",
+  "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+  "owner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "deployTxHash": "0xc872ee66e5d8824ebe29aab5de064311468a5321e76803605cab2120a509b811",
+  "deployBlock": 1,
+  "deployedAt": "2026-10-16T07:17:50.000Z",
+  "solcVersion": "0.8.28"
+}
